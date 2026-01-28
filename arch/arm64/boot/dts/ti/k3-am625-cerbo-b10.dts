@@ -1,0 +1,27 @@
+/dts-v1/;
+
+#include "k3-am625-victron-reva.dtsi"
+#include "k3-am625-cerbo-b1x.dtsi"
+#include "k3-am625-cerbo-iob3.dtsi"
+
+/ {
+	compatible = "victronenergy,cerbo-gx-b10",
+		     "sancloud,am625-victron-reva",
+		     "sancloud,am625-victron",
+		     "ti,am625";
+};
+
+&usr_button {
+	gpios = <&main_gpio0 83 GPIO_ACTIVE_LOW>;
+};
+
+/* Enable to use patched PCB. */
+#if 0
+&buzzer {
+	status = "disabled";
+};
+
+&ethphy_clk {
+	pwms = <&epwm1 1 20 0>;					  /* 50 MHz */
+};
+#endif

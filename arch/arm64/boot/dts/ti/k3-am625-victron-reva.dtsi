@@ -1,0 +1,8 @@
+#include "k3-am625-victron.dtsi"
+#include "k3-am625-victron-lattice-hdmi.dtsi"
+
+/ {
+	compatible = "sancloud,am625-victron-reva",
+		     "sancloud,am625-victron",
+		     "ti,am625";
+};
