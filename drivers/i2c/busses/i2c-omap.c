@@ -1114,14 +1114,11 @@ static int omap_i2c_xfer_data(struct omap_i2c_dev *omap)
 		if (stat & OMAP_I2C_STAT_RDR) {
 			u8 num_bytes = 1;
 
-			if (omap->fifo_size)
-				num_bytes = omap->buf_len;
-
-			if (omap->errata & I2C_OMAP_ERRATA_I207) {
+			if (omap->errata & I2C_OMAP_ERRATA_I207)
 				i2c_omap_errata_i207(omap, stat);
-				num_bytes = (omap_i2c_read_reg(omap,
-					OMAP_I2C_BUFSTAT_REG) >> 8) & 0x3F;
-			}
+
+			num_bytes = (omap_i2c_read_reg(omap,
+				OMAP_I2C_BUFSTAT_REG) >> 8) & 0x3F;
 
 			omap_i2c_receive_data(omap, num_bytes, true);
 			omap_i2c_ack_stat(omap, OMAP_I2C_STAT_RDR);
