@@ -396,16 +396,7 @@ static int gxbl_probe(struct i2c_client *i2c)
 	if (err && err != -ENODEV)
 		return dev_err_probe(&i2c->dev, err, "can't get regulator\n");
 
-	snprintf(name, sizeof(name), "%s-%s", "gxdisp", dev_name(&i2c->dev));
-
-	bl = devm_backlight_device_register(&i2c->dev, name, &i2c->dev, gxbl,
-					    &gxbl_ops, NULL);
-	if (IS_ERR(bl))
-		return PTR_ERR(bl);
-
 	gxbl->i2c = i2c;
-	gxbl->bl = bl;
-
 	i2c_set_clientdata(i2c, gxbl);
 
 	rev = gxbl_read8(gxbl, GXBL_SWREV);
@@ -431,9 +422,17 @@ static int gxbl_probe(struct i2c_client *i2c)
 	if (!of_property_read_u32(np, "default-brightness", &brightness))
 		gxbl->auto_brightness = false;
 
+	snprintf(name, sizeof(name), "%s-%s", "gxdisp", dev_name(&i2c->dev));
+
+	bl = devm_backlight_device_register(&i2c->dev, name, &i2c->dev, gxbl,
+					    &gxbl_ops, NULL);
+	if (IS_ERR(bl))
+		return PTR_ERR(bl);
+
 	bl->props.brightness = min(brightness, max_br);
 	bl->props.max_brightness = max_br;
 	bl->props.power = power ? FB_BLANK_UNBLANK : FB_BLANK_POWERDOWN;
+	gxbl->bl = bl;
 
 	err = sysfs_create_group(&bl->dev.kobj, &gxbl_attr_group);
 	if (err)
