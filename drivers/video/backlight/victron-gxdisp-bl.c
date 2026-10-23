@@ -69,7 +69,6 @@ struct gxbl {
 	struct backlight_device *bl;
 	const u8 *levels;
 	bool auto_brightness;
-	struct regulator *vcc_reg;
 };
 
 static int gxbl_read(struct gxbl *gxbl, u8 addr, void *buf, size_t len)
@@ -393,26 +392,16 @@ static int gxbl_probe(struct i2c_client *i2c)
 	if (!gxbl)
 		return -ENOMEM;
 
-	gxbl->vcc_reg = devm_regulator_get(&i2c->dev, "vcc");
-	if (IS_ERR(gxbl->vcc_reg)) {
-		dev_err(&i2c->dev, "can't get regulator: %pe\n", gxbl->vcc_reg);
-		return PTR_ERR(gxbl->vcc_reg);
-	}
-
-	err = regulator_enable(gxbl->vcc_reg);
-	if (err) {
-		dev_err(&i2c->dev, "can't enable regulator: %d\n", err);
-		return err;
-	}
+	err = devm_regulator_get_enable_optional(&i2c->dev, "vcc");
+	if (err && err != -ENODEV)
+		return dev_err_probe(&i2c->dev, err, "can't get regulator\n");
 
 	snprintf(name, sizeof(name), "%s-%s", "gxdisp", dev_name(&i2c->dev));
 
 	bl = devm_backlight_device_register(&i2c->dev, name, &i2c->dev, gxbl,
 					    &gxbl_ops, NULL);
-	if (IS_ERR(bl)) {
-		err = PTR_ERR(bl);
-		goto err_out;
-	}
+	if (IS_ERR(bl))
+		return PTR_ERR(bl);
 
 	gxbl->i2c = i2c;
 	gxbl->bl = bl;
@@ -420,16 +409,12 @@ static int gxbl_probe(struct i2c_client *i2c)
 	i2c_set_clientdata(i2c, gxbl);
 
 	rev = gxbl_read8(gxbl, GXBL_SWREV);
-	if (rev < 0) {
-		err = rev;
-		goto err_out;
-	}
+	if (rev < 0)
+		return rev;
 
 	ctrl = gxbl_read8(gxbl, GXBL_CTRL);
-	if (ctrl < 0) {
-		err = ctrl;
-		goto err_out;
-	}
+	if (ctrl < 0)
+		return ctrl;
 
 	err = gxbl_update_adc_map(gxbl);
 	if (err)
@@ -452,18 +437,13 @@ static int gxbl_probe(struct i2c_client *i2c)
 
 	err = sysfs_create_group(&bl->dev.kobj, &gxbl_attr_group);
 	if (err)
-		goto err_out;
+		return err;
 
 	gxbl_update(bl);
 
 	dev_info(&bl->dev, "GX Display backlight rev %d\n", rev);
 
 	return 0;
-
-err_out:
-	regulator_disable(gxbl->vcc_reg);
-
-	return err;
 }
 
 static void gxbl_remove(struct i2c_client *i2c)
@@ -471,7 +451,6 @@ static void gxbl_remove(struct i2c_client *i2c)
 	struct gxbl *gxbl = i2c_get_clientdata(i2c);
 
 	sysfs_remove_group(&gxbl->bl->dev.kobj, &gxbl_attr_group);
-	regulator_disable(gxbl->vcc_reg);
 }
 
 static const struct of_device_id gxbl_dt_ids[] = {
