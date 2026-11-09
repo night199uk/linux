@@ -85,6 +85,7 @@ dtbo-$(CONFIG_ARCH_BCM2835) += \
 	gpio-no-irq.dtbo \
 	gpio-poweroff.dtbo \
 	gpio-shutdown.dtbo \
+	gx-touch.dtbo \
 	hd44780-i2c-lcd.dtbo \
 	hd44780-lcd.dtbo \
 	hdmi-backlight-hwhack-gpio.dtbo \
