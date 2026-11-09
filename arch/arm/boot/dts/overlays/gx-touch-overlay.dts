@@ -1,0 +1,51 @@
+// SPDX-License-Identifier: GPL-2.0
+/*
+ * Device Tree overlay for the Victron GX Touch on HDMI.
+ *
+ * The GX Touch carries an EDT FT5x06 compatible touch controller, an EDID
+ * EEPROM and the Victron GX display backlight controller on the HDMI DDC
+ * bus. Select the HDMI port with the hdmi0 or hdmi1 parameter; hdmi0 is
+ * the default.
+ *
+ * Full KMS (vc4-kms-v3d or vc4-kms-v3d-pi4) must be enabled for the DDC
+ * bus to be available.
+ */
+
+/dts-v1/;
+/plugin/;
+
+/ {
+	compatible = "brcm,bcm2711", "brcm,bcm2712";
+
+	frag0: fragment@0 {
+		target = <&ddc0>;
+		__overlay__ {
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			touchscreen@38 {
+				compatible = "edt,edt-ft5316", "edt,edt-ft5306";
+				reg = <0x38>;
+			};
+
+			edid: eeprom@50 {
+				compatible = "atmel,24c02";
+				reg = <0x50>;
+				pagesize = <16>;
+				read-only;
+			};
+
+			backlight@51 {
+				compatible = "victronenergy,gxdisp-backlight";
+				reg = <0x51>;
+				default-on;
+				default-brightness = <15>;
+			};
+		};
+	};
+
+	__overrides__ {
+		hdmi0 = <&frag0>, "target:0=", <&ddc0>;
+		hdmi1 = <&frag0>, "target:0=", <&ddc1>;
+	};
+};
